@@ -1,19 +1,27 @@
 mod utils;
 
 use std::error::Error;
-use std::fs::File;
-use std::io::BufReader;
-use rodio::{Decoder, OutputStream, source::Source, Sink};
+use std::thread::sleep;
+use std::time::Duration;
+
+use rand::Rng;
+
+use crate::utils::{get_args, get_rodio_io};
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let (_stream, stream_handle) = OutputStream::try_default().unwrap();
-    let file = BufReader::new(File::open("src/fart_reverb.mp3").unwrap());
+    let (file, proba) = get_args()?;
+    let (_stream, source, sink) = get_rodio_io(file)?;
 
-    let source = Decoder::new(file).unwrap();
-    let sink = Sink::try_new(&stream_handle).unwrap();
+    let mut rng = rand::rng();
+    let dur = Duration::from_secs(1);
 
-    sink.append(source);
-    sink.sleep_until_end();
+    loop {
+        if !rng.random_bool(proba) {
+            sleep(dur);
+            continue;
+        }
 
-    Ok(())
+        sink.append(source.clone());
+        sink.sleep_until_end();
+    }
 }
